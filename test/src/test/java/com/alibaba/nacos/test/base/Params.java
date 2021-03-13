@@ -25,6 +25,9 @@ public class Params {
 
     private MultiValueMap<String, String> paramMap;
 
+    /**
+    * 提供静态代码的目的是不用多创建一个对象了
+    */
     public static Params newParams() {
         Params params = new Params();
         params.paramMap = new LinkedMultiValueMap<String, String>();

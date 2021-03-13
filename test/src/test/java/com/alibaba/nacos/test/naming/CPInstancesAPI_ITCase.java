@@ -70,6 +70,12 @@ public class CPInstancesAPI_ITCase {
     @Autowired
     private TestRestTemplate restTemplate;
 
+//    public static void main(String[] args) {
+//        String url = String.format("http://localhost:%d/", 50);
+//        System.out.println("url = " + url);
+//        String url1 = String.format("http://localhost:%s/", "50");
+//        System.out.println("url1 = " + url1);
+//    }
     @Before
     public void setUp() throws Exception {
         String url = String.format("http://localhost:%d/", port);

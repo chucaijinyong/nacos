@@ -179,6 +179,7 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
 
         Loggers.SRV_LOG.info("[NACOS-RAFT] datum is changed, key: {}, value: {}", key, value);
 
+        // 拿到服务的所有实例进行遍历
         for (Instance instance : value.getInstanceList()) {
 
             if (instance == null) {
@@ -194,7 +195,7 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
                 instance.setWeight(0.01D);
             }
         }
-
+        // ips其实就是Instances实例列表，updateIPs将所有的实例列表更新到内存结构里
         updateIPs(value.getInstanceList(), KeyBuilder.matchEphemeralInstanceListKey(key));
 
         recalculateChecksum();
@@ -227,16 +228,19 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
 
     /**
      * Update instances.
-     *
+     * 将注册的所有实例更新到内存结构里去
      * @param instances instances
      * @param ephemeral whether is ephemeral instance
      */
     public void updateIPs(Collection<Instance> instances, boolean ephemeral) {
         Map<String, List<Instance>> ipMap = new HashMap<>(clusterMap.size());
+        // 实例化一个空的map 即ipMap  下面要体现copyonwrite思想了，之所以拷贝一份的目的是让读实例即读注册表的操作
+        // 都走复制的map 即ipMap 让更新的操作，都操作ipMap 这样就能做到高并发读写分离了
         for (String clusterName : clusterMap.keySet()) {
             ipMap.put(clusterName, new ArrayList<>());
         }
 
+        // 实现复制
         for (Instance instance : instances) {
             try {
                 if (instance == null) {
@@ -256,19 +260,20 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
                     cluster.init();
                     getClusterMap().put(instance.getClusterName(), cluster);
                 }
-
+                // 此处：拿到空的clusterName对应的instances集合，将所有实例放进去。这就完成了实例的复制，不过此时还没有放到service里面去
+                // 只是目前放到了map的内存map集合
                 List<Instance> clusterIPs = ipMap.get(instance.getClusterName());
                 if (clusterIPs == null) {
                     clusterIPs = new LinkedList<>();
                     ipMap.put(instance.getClusterName(), clusterIPs);
                 }
-
                 clusterIPs.add(instance);
             } catch (Exception e) {
                 Loggers.SRV_LOG.error("[NACOS-DOM] failed to process ip: " + instance, e);
             }
         }
 
+        //此处对复制的集合进行操作
         for (Map.Entry<String, List<Instance>> entry : ipMap.entrySet()) {
             //make every ip mine
             List<Instance> entryIPs = entry.getValue();
@@ -369,7 +374,9 @@ public class Service extends com.alibaba.nacos.api.naming.pojo.Service implement
             if (clusterObj == null) {
                 continue;
             }
-
+            // 最终会获取持久节点和临时节点
+            // allInstances.addAll(persistentInstances);
+            // allInstances.addAll(ephemeralInstances);
             result.addAll(clusterObj.allIPs());
         }
         return result;

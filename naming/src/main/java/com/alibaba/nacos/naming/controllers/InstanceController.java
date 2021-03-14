@@ -700,7 +700,7 @@ public class InstanceController {
         checkIfDisabled(service);
 
         List<Instance> srvedIPs;
-
+         // 获取持久节点和临时节点
         srvedIPs = service.srvIPs(Arrays.asList(StringUtils.split(clusters, ",")));
 
         // filter ips using selector:
